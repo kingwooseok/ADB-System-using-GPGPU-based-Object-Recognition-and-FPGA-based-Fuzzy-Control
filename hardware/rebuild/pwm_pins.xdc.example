@@ -1,0 +1,31 @@
+# Copy to pwm_pins.xdc, then set both package pins from the actual board wiring.
+# No default pin assignment is supplied: the original steer/speed pin mapping
+# is not preserved. Names such as JB1 are connector labels, not PACKAGE_PINs.
+# Set these in the Vivado Tcl console before launching synthesis/implementation:
+#   set ::env(ADB_PWM_STEER_PIN) <actual_package_pin>
+#   set ::env(ADB_PWM_SPEED_PIN) <actual_package_pin>
+
+foreach variable {ADB_PWM_STEER_PIN ADB_PWM_SPEED_PIN} {
+    if {![info exists ::env($variable)] ||
+        ![regexp {^[A-Z]+[0-9]+$} $::env($variable)]} {
+        error "Set $variable to the FPGA package pin matching the actual PWM wiring."
+    }
+}
+if {$::env(ADB_PWM_STEER_PIN) eq $::env(ADB_PWM_SPEED_PIN)} {
+    error "The steering and speed PWM outputs must use different package pins."
+}
+foreach {port_name variable} {
+    o_pwm_steer_0 ADB_PWM_STEER_PIN
+    o_pwm_speed_0 ADB_PWM_SPEED_PIN
+} {
+    set pwm_port [get_ports -quiet $port_name]
+    if {[llength $pwm_port] != 1} {
+        error "Expected exactly one top-level PWM output $port_name."
+    }
+    set assigned_pin [get_property PACKAGE_PIN $pwm_port]
+    if {$assigned_pin ne "" && $assigned_pin ne $::env($variable)} {
+        error "$port_name already has a different PACKAGE_PIN assignment."
+    }
+    set_property PACKAGE_PIN $::env($variable) $pwm_port
+    set_property IOSTANDARD LVCMOS33 $pwm_port
+}

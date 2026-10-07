@@ -1,0 +1,10 @@
+* text=auto
+*.c text eol=lf
+*.h text eol=lf
+*.v text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.pdf binary
+*.pptx binary
+*.xsa binary
+*.mp4 binary
